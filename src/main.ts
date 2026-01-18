@@ -11,7 +11,6 @@ class App {
     private solarSystem: SolarSystem;
     private gestureInterpreter: GestureInterpreter;
     private raycaster: THREE.Raycaster;
-    private hoveredPlanet: Planet | null = null;
     private selectedPlanet: Planet | null = null;
     private indicator: HTMLElement | null;
     private tooltip: HTMLElement;

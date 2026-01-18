@@ -65,7 +65,7 @@ export class GestureInterpreter {
 
         // 3. Closed Fist (Pan)
         // All fingers close to wrist
-        if (distIndex < 0.25 && distMiddle < 0.25 && distRing < 0.25) {
+        if (distIndex < 0.25 && distMiddle < 0.25 && distRing < 0.25 && distPinky < 0.25) {
             this.applySmoothing(rawDelta);
             return { type: 'pan', delta: { ...this.smoothedDeltas }, velocity };
         }
