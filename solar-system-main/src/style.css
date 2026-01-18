@@ -1,0 +1,254 @@
+:root {
+    --font-main: 'Outfit', system-ui, sans-serif;
+    --accent: #00e5ff;
+    --accent-glow: rgba(0, 229, 255, 0.4);
+    --bg-dark: rgba(2, 2, 8, 0.95);
+    --glass: rgba(0, 229, 255, 0.03);
+    --border: rgba(0, 229, 255, 0.15);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background-color: #000;
+    color: #fff;
+    font-family: var(--font-main);
+    overflow: hidden;
+    touch-action: none;
+    width: 100vw;
+    height: 100vh;
+}
+
+#app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+#three-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+#ui-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 10;
+    overflow: hidden;
+}
+
+.glass {
+    background: var(--bg-dark);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Planet Labels */
+.planet-label {
+    position: absolute;
+    pointer-events: none;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.planet-label .line {
+    width: 1px;
+    height: 20px;
+    background: var(--accent);
+    opacity: 0.4;
+}
+
+.planet-label .name {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+}
+
+/* Tooltip */
+#planet-tooltip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-size: 11px;
+    pointer-events: none;
+    z-index: 100;
+    transform: translate(20px, 20px);
+    border-left: 3px solid var(--accent);
+}
+
+/* HUD elements */
+#hand-tracking-status {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 9px;
+    letter-spacing: 1px;
+}
+
+#hand-tracking-status .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #ff3e3e;
+}
+
+#hand-tracking-status.active .dot {
+    background: #00ff88;
+    box-shadow: 0 0 10px #00ff88;
+}
+
+/* Info Panel */
+#info-panel {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 280px;
+    max-width: calc(100vw - 40px);
+    padding: 25px;
+    border-radius: 20px;
+    transform: translateX(40px);
+    opacity: 0;
+    transition: all 0.5s ease;
+    pointer-events: auto;
+    /* Allow interaction with button */
+}
+
+#info-panel:not(.hidden) {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.panel-content h1 {
+    font-size: 24px;
+    color: var(--accent);
+    margin: 5px 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stats-grid {
+    display: grid;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.stat-box {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px;
+    border-radius: 10px;
+}
+
+.stat-box .label {
+    font-size: 8px;
+    opacity: 0.5;
+    text-transform: uppercase;
+}
+
+#exit-focus {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 1px;
+}
+
+/* Help Overlay */
+#controls-help {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+}
+
+.control-pill {
+    padding: 6px 12px;
+    font-size: 9px;
+    background: rgba(0, 0, 0, 0.6);
+    border-radius: 6px;
+    color: #888;
+    white-space: nowrap;
+}
+
+.control-pill span {
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+    #info-panel {
+        top: auto;
+        bottom: 110px;
+        right: 20px;
+        left: 20px;
+        width: auto;
+        padding: 15px;
+    }
+
+    #controls-help {
+        flex-direction: row;
+        flex-wrap: wrap;
+        left: 20px;
+        right: 20px;
+        bottom: 15px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .control-pill {
+        padding: 4px 8px;
+        font-size: 8px;
+    }
+
+    #hand-tracking-status {
+        top: 15px;
+        left: 15px;
+        padding: 6px 12px;
+    }
+}
+
+.hidden {
+    display: none !important;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

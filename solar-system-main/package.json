@@ -1,0 +1,25 @@
+{
+  "name": "solar-system-3d",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mediapipe/drawing_utils": "^0.3.1675466124",
+    "@mediapipe/hands": "^0.4.1675469240",
+    "gsap": "^3.12.5",
+    "stats.js": "^0.17.0",
+    "three": "^0.172.0",
+    "three-stdlib": "^2.36.1"
+  },
+  "devDependencies": {
+    "@types/stats.js": "^0.17.4",
+    "@types/three": "^0.182.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7"
+  }
+}

@@ -7,7 +7,7 @@ interface Point3D {
 }
 
 export interface GestureData {
-    type: 'pinch' | 'pan' | 'rotate' | 'point' | null;
+    type: 'pinch' | 'pan' | 'rotate' | null;
     delta: { x: number; y: number; z: number };
     velocity: number;
 }
@@ -33,46 +33,33 @@ export class GestureInterpreter {
         const thumb = landmarks[4];
         const index = landmarks[8];
         const middle = landmarks[12];
-        const ring = landmarks[16];
-        const pinky = landmarks[20];
         const wrist = landmarks[0];
 
-        // Distances from wrist to determine "extended" or "curled"
-        const distIndex = this.getDist(index, wrist);
-        const distMiddle = this.getDist(middle, wrist);
-        const distRing = this.getDist(ring, wrist);
-        const distPinky = this.getDist(pinky, wrist);
-
-        // Pinch distance
+        // Distances
         const pinchDist = this.getDist(thumb, index);
+        const indexWrist = this.getDist(index, wrist);
+        const middleWrist = this.getDist(middle, wrist);
+        const ringWrist = this.getDist(landmarks[16], wrist);
 
-        // Velocity calculation
+        // Velocity calculation (magnitude of wrist movement)
         const rawDelta = this.getMovementDelta(0);
         const velocity = Math.sqrt(rawDelta.x ** 2 + rawDelta.y ** 2);
 
-        // 1. Pointing (Index Extended, others curled)
-        // Precise targeting: index is far from wrist, middle/ring/pinky are close to wrist
-        if (distIndex > 0.4 && distMiddle < 0.25 && distRing < 0.25) {
-            return { type: 'point', delta: { x: 0, y: 0, z: 0 }, velocity };
-        }
-
-        // 2. Pinch (Thumb + Index close)
-        if (pinchDist < 0.06) {
+        // Pinch (Zoom)
+        if (pinchDist < 0.08) {
             const d8 = this.getMovementDelta(8);
             this.applySmoothing(d8);
             return { type: 'pinch', delta: { x: 0, y: 0, z: d8.y }, velocity };
         }
 
-        // 3. Closed Fist (Pan)
-        // All fingers close to wrist
-        if (distIndex < 0.25 && distMiddle < 0.25 && distRing < 0.25) {
+        // Fist (Pan)
+        if (indexWrist < 0.25 && middleWrist < 0.25 && ringWrist < 0.25) {
             this.applySmoothing(rawDelta);
             return { type: 'pan', delta: { ...this.smoothedDeltas }, velocity };
         }
 
-        // 4. Open Palm (Rotate)
-        // All fingers extended
-        if (distIndex > 0.4 && distMiddle > 0.4 && distRing > 0.4) {
+        // Open Palm (Rotate)
+        if (indexWrist > 0.45 && middleWrist > 0.45) {
             this.applySmoothing(rawDelta);
             return { type: 'rotate', delta: { ...this.smoothedDeltas }, velocity };
         }

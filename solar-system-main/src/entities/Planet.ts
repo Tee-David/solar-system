@@ -8,11 +8,9 @@ export interface PlanetConfig {
     color: number;
     textureName?: string;
     rotationSpeed: number;
-    hasRings?: boolean;
 }
 
-export class Planet extends THREE.Group {
-    public mesh: THREE.Mesh;
+export class Planet extends THREE.Mesh {
     private orbitSpeed: number;
     private rotSpeed: number;
     private distance: number;
@@ -21,29 +19,13 @@ export class Planet extends THREE.Group {
 
     public labelElement: HTMLElement;
     private atmosphere: THREE.Mesh;
-    private rings?: THREE.Mesh;
 
     constructor(config: PlanetConfig) {
-        super();
-
         const geometry = new THREE.SphereGeometry(config.radius, 64, 64);
 
         let material: THREE.MeshStandardMaterial;
-        const textureLoader = new THREE.TextureLoader();
-
-        if (config.name === 'Earth') {
-            const dayTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_day_4096.jpg');
-            const specTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
-
-            material = new THREE.MeshStandardMaterial({
-                map: dayTexture,
-                roughnessMap: specTexture,
-                roughness: 0.8,
-                metalness: 0.2,
-                emissive: new THREE.Color(0x001144),
-                emissiveIntensity: 0.2,
-            });
-        } else if (config.textureName) {
+        if (config.textureName) {
+            const textureLoader = new THREE.TextureLoader();
             const texture = textureLoader.load(`https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/${config.textureName}.jpg`);
             material = new THREE.MeshStandardMaterial({
                 map: texture,
@@ -60,20 +42,19 @@ export class Planet extends THREE.Group {
             });
         }
 
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.name = config.name;
-        this.add(this.mesh);
+        super(geometry, material);
 
+        this.name = config.name;
         this.orbitSpeed = config.speed;
         this.rotSpeed = config.rotationSpeed;
         this.distance = config.distance;
         this.angle = Math.random() * Math.PI * 2;
 
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        this.castShadow = true;
+        this.receiveShadow = true;
 
-        // Atmospheric Glow
-        const atmoGeom = new THREE.SphereGeometry(config.radius * 1.08, 64, 64);
+        // Atmospheric Glow (Rim Shader)
+        const atmoGeom = new THREE.SphereGeometry(config.radius * 1.05, 64, 64);
         const atmoMat = new THREE.ShaderMaterial({
             transparent: true,
             side: THREE.BackSide,
@@ -97,7 +78,7 @@ export class Planet extends THREE.Group {
         varying vec3 vPosition;
         void main() {
           vec3 viewDir = normalize(-vPosition);
-          float intensity = pow(0.7 - dot(vNormal, viewDir), 5.0);
+          float intensity = pow(0.6 - dot(vNormal, viewDir), 4.0);
           gl_FragColor = vec4(glowColor, intensity);
         }
       `
@@ -105,21 +86,7 @@ export class Planet extends THREE.Group {
         this.atmosphere = new THREE.Mesh(atmoGeom, atmoMat);
         this.add(this.atmosphere);
 
-        // Saturn Rings
-        if (config.hasRings) {
-            const ringGeom = new THREE.TorusGeometry(config.radius * 2.2, config.radius * 0.4, 2, 128);
-            const ringMat = new THREE.MeshStandardMaterial({
-                color: config.color,
-                transparent: true,
-                opacity: 0.4,
-                side: THREE.DoubleSide
-            });
-            this.rings = new THREE.Mesh(ringGeom, ringMat);
-            this.rings.rotation.x = Math.PI / 2.5;
-            this.add(this.rings);
-        }
-
-        // Label
+        // Initial Label
         this.labelElement = document.createElement('div');
         this.labelElement.className = 'planet-label';
         this.labelElement.innerHTML = `<div class="line"></div><div class="name">${config.name}</div>`;
@@ -131,11 +98,7 @@ export class Planet extends THREE.Group {
     public update(delta: number, camera: THREE.Camera) {
         const scaledDelta = delta * this.timeScale;
         this.angle += this.orbitSpeed * scaledDelta;
-        this.mesh.rotation.y += this.rotSpeed * scaledDelta;
-        if (this.rings) {
-            // Subtle ring oscillation
-            this.rings.rotation.z += scaledDelta * 0.1;
-        }
+        this.rotation.y += this.rotSpeed * scaledDelta;
         this.updatePosition();
         this.updateLabel(camera);
     }
