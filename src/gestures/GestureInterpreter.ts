@@ -34,12 +34,14 @@ export class GestureInterpreter {
         const index = landmarks[8];
         const middle = landmarks[12];
         const ring = landmarks[16];
+        const pinky = landmarks[20];
         const wrist = landmarks[0];
 
         // Distances from wrist to determine "extended" or "curled"
         const distIndex = this.getDist(index, wrist);
         const distMiddle = this.getDist(middle, wrist);
         const distRing = this.getDist(ring, wrist);
+        const distPinky = this.getDist(pinky, wrist);
 
         // Pinch distance
         const pinchDist = this.getDist(thumb, index);
