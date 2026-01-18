@@ -18,6 +18,7 @@ export class Planet extends THREE.Mesh {
     public timeScale: number = 1.0;
 
     public labelElement: HTMLElement;
+    private atmosphere: THREE.Mesh;
 
     constructor(config: PlanetConfig) {
         const geometry = new THREE.SphereGeometry(config.radius, 64, 64);
@@ -31,15 +32,13 @@ export class Planet extends THREE.Mesh {
                 roughness: 0.8,
                 metalness: 0.1,
                 emissive: new THREE.Color(config.color),
-                emissiveIntensity: 0.15,
+                emissiveIntensity: 0.05,
             });
         } else {
             material = new THREE.MeshStandardMaterial({
                 color: config.color,
                 roughness: 0.7,
                 metalness: 0.2,
-                emissive: new THREE.Color(config.color),
-                emissiveIntensity: 0.2,
             });
         }
 
@@ -54,12 +53,43 @@ export class Planet extends THREE.Mesh {
         this.castShadow = true;
         this.receiveShadow = true;
 
+        // Atmospheric Glow (Rim Shader)
+        const atmoGeom = new THREE.SphereGeometry(config.radius * 1.05, 64, 64);
+        const atmoMat = new THREE.ShaderMaterial({
+            transparent: true,
+            side: THREE.BackSide,
+            blending: THREE.AdditiveBlending,
+            uniforms: {
+                glowColor: { value: new THREE.Color(config.color) },
+                viewVector: { value: new THREE.Vector3() }
+            },
+            vertexShader: `
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          vNormal = normalize(normalMatrix * normal);
+          vPosition = (modelViewMatrix * vec4(position, 1.0)).xyz;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+            fragmentShader: `
+        uniform vec3 glowColor;
+        varying vec3 vNormal;
+        varying vec3 vPosition;
+        void main() {
+          vec3 viewDir = normalize(-vPosition);
+          float intensity = pow(0.6 - dot(vNormal, viewDir), 4.0);
+          gl_FragColor = vec4(glowColor, intensity);
+        }
+      `
+        });
+        this.atmosphere = new THREE.Mesh(atmoGeom, atmoMat);
+        this.add(this.atmosphere);
+
+        // Initial Label
         this.labelElement = document.createElement('div');
         this.labelElement.className = 'planet-label';
-        this.labelElement.innerHTML = `
-      <div class="line"></div>
-      <div class="name">${config.name}</div>
-    `;
+        this.labelElement.innerHTML = `<div class="line"></div><div class="name">${config.name}</div>`;
         document.getElementById('ui-layer')?.appendChild(this.labelElement);
 
         this.updatePosition();
