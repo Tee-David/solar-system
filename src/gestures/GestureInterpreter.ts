@@ -9,12 +9,12 @@ interface Point3D {
 export interface GestureData {
     type: 'pinch' | 'pan' | 'rotate' | null;
     delta: { x: number; y: number; z: number };
+    velocity: number;
 }
 
 export class GestureInterpreter {
     private history: Point3D[][] = [];
-    // EMA Smoothing factor (lower = smoother but more lag)
-    private smoothing = 0.4;
+    private smoothing = 0.5;
     private smoothedDeltas = { x: 0, y: 0, z: 0 };
 
     constructor() {
@@ -23,45 +23,48 @@ export class GestureInterpreter {
 
     public process(results: Results): GestureData {
         if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-            return { type: null, delta: { x: 0, y: 0, z: 0 } };
+            return { type: null, delta: { x: 0, y: 0, z: 0 }, velocity: 0 };
         }
 
         const landmarks = results.multiHandLandmarks[0];
         this.history.push(landmarks);
-        if (this.history.length > 10) this.history.shift(); // Longer history for fine-grained trends
+        if (this.history.length > 10) this.history.shift();
 
         const thumb = landmarks[4];
         const index = landmarks[8];
         const middle = landmarks[12];
         const wrist = landmarks[0];
 
-        // Pinch: Use distance between thumb and index tips
+        // Distances
         const pinchDist = this.getDist(thumb, index);
-        if (pinchDist < 0.06) {
-            const rawDelta = this.getMovementDelta(8);
-            this.applySmoothing(rawDelta);
-            return { type: 'pinch', delta: { x: 0, y: 0, z: this.smoothedDeltas.y } };
-        }
-
-        // Fist (Pan): Fine-grained detection of closed state
         const indexWrist = this.getDist(index, wrist);
         const middleWrist = this.getDist(middle, wrist);
         const ringWrist = this.getDist(landmarks[16], wrist);
 
+        // Velocity calculation (magnitude of wrist movement)
+        const rawDelta = this.getMovementDelta(0);
+        const velocity = Math.sqrt(rawDelta.x ** 2 + rawDelta.y ** 2);
+
+        // Pinch (Zoom)
+        if (pinchDist < 0.08) {
+            const d8 = this.getMovementDelta(8);
+            this.applySmoothing(d8);
+            return { type: 'pinch', delta: { x: 0, y: 0, z: d8.y }, velocity };
+        }
+
+        // Fist (Pan)
         if (indexWrist < 0.25 && middleWrist < 0.25 && ringWrist < 0.25) {
-            const rawDelta = this.getMovementDelta(0); // Wrist movement
             this.applySmoothing(rawDelta);
-            return { type: 'pan', delta: { ...this.smoothedDeltas } };
+            return { type: 'pan', delta: { ...this.smoothedDeltas }, velocity };
         }
 
-        // Open Palm (Rotate): Fingers fully extended
+        // Open Palm (Rotate)
         if (indexWrist > 0.45 && middleWrist > 0.45) {
-            const rawDelta = this.getMovementDelta(0);
             this.applySmoothing(rawDelta);
-            return { type: 'rotate', delta: { ...this.smoothedDeltas } };
+            return { type: 'rotate', delta: { ...this.smoothedDeltas }, velocity };
         }
 
-        return { type: null, delta: { x: 0, y: 0, z: 0 } };
+        return { type: null, delta: { x: 0, y: 0, z: 0 }, velocity: 0 };
     }
 
     private applySmoothing(raw: { x: number; y: number; z: number }) {

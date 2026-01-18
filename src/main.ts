@@ -50,7 +50,7 @@ class App {
         this.sceneManager.add(this.solarSystem);
         this.addStarfield();
 
-        this.sceneManager.camera.position.set(0, 300, 1000);
+        this.sceneManager.camera.position.set(0, 500, 1500); // Start further out for scale awareness
         this.sceneManager.camera.lookAt(0, 0, 0);
 
         this.animate();
@@ -76,25 +76,54 @@ class App {
 
     private handleGestures(results: any) {
         const data = this.gestureInterpreter.process(results);
-        const { type, delta } = data;
+        const { type, delta, velocity } = data;
         const camera = this.sceneManager.camera;
+
+        // Adaptive Sensitivity based on camera distance
+        const distFactor = camera.position.length() * 0.005;
 
         this.updateSelection(results);
 
         if (type === 'pinch') {
-            const zoomAmount = delta.z * 20;
+            // Scale zoom by distance for "Logarithmic" feel
+            const zoomAmount = delta.z * distFactor * 250;
+
             gsap.to(camera.position, {
-                z: THREE.MathUtils.clamp(camera.position.z + zoomAmount, 100, 3000),
-                duration: 0.1
+                z: camera.position.z + zoomAmount,
+                x: camera.position.x * (1 + delta.z * 0.1), // Slight perspectival zoom shift
+                y: camera.position.y * (1 + delta.z * 0.1),
+                duration: 0.15,
+                onUpdate: () => {
+                    // Space-warp effect (FOV change)
+                    const fovMod = Math.abs(delta.z) * 15;
+                    camera.fov = 65 + fovMod;
+                    camera.updateProjectionMatrix();
+                }
             });
-        } else if (type === 'pan' && !this.selectedPlanet) {
+
+            // Focus Override: If zooming out aggressively, release planet
+            if (delta.z > 0.05 && this.selectedPlanet) {
+                this.exitFocus();
+            }
+
+        } else if (type === 'pan') {
+            // Pan scaled by distance to feel 1:1 with screen space
+            const panX = -delta.x * distFactor * 1000;
+            const panY = delta.y * distFactor * 1000;
+
             gsap.to(camera.position, {
-                x: camera.position.x - delta.x * 6,
-                y: camera.position.y + delta.y * 6,
-                duration: 0.1
+                x: camera.position.x + panX,
+                y: camera.position.y + panY,
+                duration: 0.2
             });
+
+            // Break focus if panned away significantly
+            if (velocity > 0.1 && this.selectedPlanet) {
+                this.exitFocus();
+            }
+
         } else if (type === 'rotate' && !this.selectedPlanet) {
-            const orbitSpeed = 0.05;
+            const orbitSpeed = 0.08;
             const angle = -delta.x * orbitSpeed;
 
             const cos = Math.cos(angle);
@@ -105,9 +134,12 @@ class App {
             gsap.to(camera.position, {
                 x: x * cos - z * sin,
                 z: x * sin + z * cos,
-                duration: 0.1,
+                duration: 0.15,
                 onUpdate: () => camera.lookAt(0, 0, 0)
             });
+        } else {
+            // Return FOV to normal when not zooming
+            gsap.to(camera, { fov: 65, duration: 0.5, onUpdate: () => camera.updateProjectionMatrix() });
         }
 
         if (type) this.updateGestureIndicator(type);
@@ -116,6 +148,7 @@ class App {
     private updateSelection(results: any) {
         if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return;
 
+        // Use index tip for targeting
         const indexTip = results.multiHandLandmarks[0][8];
         const pointer = new THREE.Vector2(
             (1 - indexTip.x) * 2 - 1,
@@ -166,8 +199,8 @@ class App {
           <div class="divider"></div>
           <div class="stats-grid">
             <div class="stat-box">
-              <div class="label">Spectral Type</div>
-              <div class="value">Planet Class-M</div>
+              <div class="label">Status</div>
+              <div class="value">ORBITAL LOCK ACTIVE</div>
             </div>
           </div>
           <button id="exit-focus">DISENGAGE</button>
@@ -181,15 +214,6 @@ class App {
         this.selectedPlanet = null;
         this.solarSystem.setTimeScale(2.5);
         document.getElementById('info-panel')?.classList.add('hidden');
-
-        gsap.to(this.sceneManager.camera.position, {
-            x: 0,
-            y: 300,
-            z: 1000,
-            duration: 1.5,
-            ease: 'expo.inOut',
-            onUpdate: () => this.sceneManager.camera.lookAt(0, 0, 0)
-        });
     }
 
     private updateGestureIndicator(type: string) {
@@ -206,9 +230,9 @@ class App {
         const colors = new Float32Array(starCount * 3);
 
         for (let i = 0; i < starCount * 3; i += 3) {
-            positions[i] = (Math.random() - 0.5) * 8000;
-            positions[i + 1] = (Math.random() - 0.5) * 8000;
-            positions[i + 2] = (Math.random() - 0.5) * 8000;
+            positions[i] = (Math.random() - 0.5) * 12000;
+            positions[i + 1] = (Math.random() - 0.5) * 12000;
+            positions[i + 2] = (Math.random() - 0.5) * 12000;
 
             const b = 0.6 + Math.random() * 0.4;
             colors[i] = b;
@@ -219,29 +243,19 @@ class App {
         starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         starGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-        // Star texture using canvas to avoid "box" particles
         const canvas = document.createElement('canvas');
-        canvas.width = 32;
-        canvas.height = 32;
+        canvas.width = 32; canvas.height = 32;
         const ctx = canvas.getContext('2d')!;
-        const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
-        gradient.addColorStop(0, 'white');
-        gradient.addColorStop(0.3, 'rgba(255,255,255,0.8)');
-        gradient.addColorStop(1, 'transparent');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, 32, 32);
-        const starTexture = new THREE.CanvasTexture(canvas);
+        const grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+        grad.addColorStop(0, 'white'); grad.addColorStop(1, 'transparent');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, 32, 32);
+        const starTex = new THREE.CanvasTexture(canvas);
 
-        const starMaterial = new THREE.PointsMaterial({
-            size: 5,
-            map: starTexture,
-            transparent: true,
-            vertexColors: true,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
+        const starMat = new THREE.PointsMaterial({
+            size: 5, map: starTex, transparent: true, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false
         });
 
-        this.sceneManager.add(new THREE.Points(starGeometry, starMaterial));
+        this.sceneManager.add(new THREE.Points(starGeometry, starMat));
     }
 
     private animate() {
@@ -253,7 +267,7 @@ class App {
             if (this.selectedPlanet) {
                 const targetPos = new THREE.Vector3();
                 this.selectedPlanet.getWorldPosition(targetPos);
-                const offset = new THREE.Vector3(0, 20, 50);
+                const offset = new THREE.Vector3(0, 25, 60);
                 this.sceneManager.camera.position.lerp(targetPos.clone().add(offset), 0.1);
                 this.sceneManager.camera.lookAt(targetPos);
             }
