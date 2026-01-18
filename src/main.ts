@@ -20,6 +20,7 @@ class App {
     constructor() {
         console.log("App initializing...");
         const canvas = document.querySelector('#three-canvas') as HTMLCanvasElement;
+        const debugCanvas = document.querySelector('#debug-canvas') as HTMLCanvasElement;
         const video = document.querySelector('#input-video') as HTMLVideoElement;
         this.handTrackingIndicator = document.getElementById('hand-tracking-status');
 
@@ -33,7 +34,7 @@ class App {
         this.gestureInterpreter = new GestureInterpreter();
         this.raycaster = new THREE.Raycaster();
 
-        new HandTracker(video, (results) => {
+        new HandTracker(video, debugCanvas, (results) => {
             this.handleResults(results);
         });
 
