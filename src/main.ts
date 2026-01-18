@@ -155,11 +155,9 @@ class App {
             if (isPointing && this.selectedPlanet !== planet) {
                 this.focusOnPlanet(planet);
             }
-            this.hoveredPlanet = planet;
         } else {
             this.sceneManager.outlinePass.selectedObjects = [];
             this.tooltip.classList.add('hidden');
-            this.hoveredPlanet = null;
         }
     }
 
