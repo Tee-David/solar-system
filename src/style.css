@@ -2,7 +2,7 @@
     --font-main: 'Outfit', system-ui, sans-serif;
     --accent: #00e5ff;
     --accent-glow: rgba(0, 229, 255, 0.4);
-    --bg-dark: rgba(2, 2, 8, 0.95);
+    --bg-dark: rgba(2, 2, 8, 0.9);
     --glass: rgba(0, 229, 255, 0.03);
     --border: rgba(0, 229, 255, 0.15);
 }
@@ -11,22 +11,29 @@
 *::before,
 *::after {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
+html,
 body {
     margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    overflow: hidden;
     background-color: #000;
     color: #fff;
     font-family: var(--font-main);
-    overflow: hidden;
     touch-action: none;
-    width: 100vw;
-    height: 100vh;
+    overscroll-behavior: none;
+    position: fixed;
+    /* Force fixed to prevent any scrolling */
 }
 
 #app {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     position: relative;
     overflow: hidden;
 }
@@ -42,9 +49,11 @@ body {
     inset: 0;
     pointer-events: none;
     z-index: 10;
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
+/* Glassmorphism Utility */
 .glass {
     background: var(--bg-dark);
     backdrop-filter: blur(20px);
@@ -65,190 +74,222 @@ body {
 
 .planet-label .line {
     width: 1px;
-    height: 20px;
+    height: 15px;
     background: var(--accent);
-    opacity: 0.4;
+    opacity: 0.5;
 }
 
 .planet-label .name {
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     border: 1px solid var(--border);
     padding: 4px 10px;
     border-radius: 4px;
-    font-size: 9px;
+    font-size: 10px;
+    font-weight: 600;
     letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--accent);
     white-space: nowrap;
 }
 
-/* Tooltip */
+/* Tooltip / Targeting HUD */
 #planet-tooltip {
     position: fixed;
     top: 0;
     left: 0;
-    padding: 10px 15px;
-    border-radius: 10px;
+    padding: 12px 20px;
+    border-radius: 4px;
     font-size: 11px;
     pointer-events: none;
     z-index: 100;
-    transform: translate(20px, 20px);
-    border-left: 3px solid var(--accent);
+    border-left: 2px solid var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
 }
 
-/* HUD elements */
+#planet-tooltip strong {
+    display: block;
+    font-size: 14px;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+/* Hand Tracking Status */
 #hand-tracking-status {
     position: absolute;
     top: 20px;
     left: 20px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     padding: 8px 16px;
-    border-radius: 50px;
-    font-size: 9px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
     letter-spacing: 1px;
 }
 
 #hand-tracking-status .dot {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: #ff3e3e;
+    transition: all 0.3s ease;
 }
 
 #hand-tracking-status.active .dot {
     background: #00ff88;
-    box-shadow: 0 0 10px #00ff88;
+    box-shadow: 0 0 15px #00ff88;
 }
 
-/* Info Panel */
+/* Debug / Neural HUD Overlay */
+#debug-canvas {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 120px;
+    height: 90px;
+    border: 1px solid var(--border);
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    opacity: 0.6;
+}
+
+/* Gesture Indicator */
+#gesture-indicator {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+/* Side Info Panel */
 #info-panel {
     position: absolute;
-    top: 80px;
-    right: 20px;
-    width: 280px;
-    max-width: calc(100vw - 40px);
-    padding: 25px;
-    border-radius: 20px;
-    transform: translateX(40px);
+    top: 50%;
+    right: 40px;
+    transform: translateY(-50%) translateX(100%);
+    width: 320px;
+    padding: 30px;
+    border-radius: 4px;
     opacity: 0;
-    transition: all 0.5s ease;
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     pointer-events: auto;
-    /* Allow interaction with button */
 }
 
 #info-panel:not(.hidden) {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(-50%) translateX(0);
 }
 
 .panel-content h1 {
-    font-size: 24px;
+    font-size: 32px;
+    margin: 0;
     color: var(--accent);
-    margin: 5px 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+}
+
+.planet-tag {
+    font-size: 10px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
 }
 
 .stats-grid {
     display: grid;
-    gap: 10px;
-    margin: 20px 0;
-}
-
-.stat-box {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 12px;
-    border-radius: 10px;
+    gap: 15px;
+    margin-bottom: 30px;
 }
 
 .stat-box .label {
-    font-size: 8px;
-    opacity: 0.5;
+    font-size: 9px;
+    color: #666;
     text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.stat-box .value {
+    font-size: 14px;
+    font-weight: 600;
 }
 
 #exit-focus {
     width: 100%;
-    background: var(--accent);
-    color: #000;
-    border: none;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
     padding: 12px;
-    border-radius: 10px;
-    font-weight: 700;
     cursor: pointer;
     text-transform: uppercase;
-    font-size: 10px;
+    font-weight: 700;
     letter-spacing: 1px;
+    transition: all 0.3s ease;
 }
 
-/* Help Overlay */
-#controls-help {
+#exit-focus:hover {
+    background: var(--accent);
+    color: #000;
+}
+
+/* Controls FAB for Mobile */
+#mobile-controls {
+    display: none;
     position: absolute;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-end;
-}
-
-.control-pill {
-    padding: 6px 12px;
-    font-size: 9px;
-    background: rgba(0, 0, 0, 0.6);
-    border-radius: 6px;
-    color: #888;
-    white-space: nowrap;
-}
-
-.control-pill span {
-    color: var(--accent);
-    font-weight: 600;
-    margin-right: 5px;
+    bottom: 30px;
+    right: 30px;
+    pointer-events: auto;
 }
 
 /* MOBILE RESPONSIVENESS */
 @media (max-width: 768px) {
     #info-panel {
         top: auto;
-        bottom: 110px;
-        right: 20px;
-        left: 20px;
-        width: auto;
-        padding: 15px;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        width: 100%;
+        transform: translateY(100%);
+        border-radius: 20px 20px 0 0;
+        padding: 24px;
+        max-height: 50vh;
     }
 
-    #controls-help {
-        flex-direction: row;
-        flex-wrap: wrap;
-        left: 20px;
-        right: 20px;
-        bottom: 15px;
-        justify-content: center;
-        align-items: center;
+    #info-panel:not(.hidden) {
+        transform: translateY(0);
     }
 
-    .control-pill {
-        padding: 4px 8px;
-        font-size: 8px;
+    .panel-content h1 {
+        font-size: 24px;
+    }
+
+    #debug-canvas {
+        width: 80px;
+        height: 60px;
+        top: 10px;
+        right: 10px;
     }
 
     #hand-tracking-status {
-        top: 15px;
-        left: 15px;
+        top: 10px;
+        left: 10px;
         padding: 6px 12px;
+    }
+
+    #mobile-controls {
+        display: block;
     }
 }
 
 .hidden {
     display: none !important;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
 }
