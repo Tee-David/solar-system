@@ -24,6 +24,11 @@ class App {
         const video = document.querySelector('#input-video') as HTMLVideoElement;
         this.handTrackingIndicator = document.getElementById('hand-tracking-status');
 
+        if (debugCanvas) {
+            debugCanvas.width = 160;
+            debugCanvas.height = 120;
+        }
+
         this.tooltip = document.createElement('div');
         this.tooltip.id = 'planet-tooltip';
         this.tooltip.className = 'glass hidden';
