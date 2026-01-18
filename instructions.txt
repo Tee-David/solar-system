@@ -1,0 +1,48 @@
+Gesture-Based Fully Interactive 3D Solar System in Three.js
+
+Build a real-time, browser-based, fully interactive 3D solar system using Three.js with camera-based hand tracking; the experience must combine accurate visualization, intuitive gesture control, and educational planetary information in a single seamless interface.
+
+Primary Interaction Model via Hand Gestures
+Implement three core gesture modes with clear detection thresholds and visual feedback;
+
+Pinch gesture must control zoom by physically moving the camera closer to or farther from the scene, not by changing field of view; zoom speed must scale smoothly with pinch distance;
+
+Closed palm movement must pan the camera horizontally and vertically across the solar system while maintaining a consistent viewing height;
+
+Open rotating palm must rotate the entire solar system around its central axis or orbit the camera around a selected planet depending on context; the system must only switch to rotation when palm openness confidence exceeds a defined threshold to avoid accidental mode changes.
+
+Gesture Reliability and Fail-Safes
+If hand tracking confidence drops, the system must automatically fall back to mouse and keyboard controls without breaking the experience; a subtle on-screen indicator must inform users when tracking is weak; users must be able to recalibrate hand tracking with one button.
+
+Solar System Simulation and Structure
+Model the Sun, all eight major planets, major moons, and the asteroid belt with visible orbital paths; planets must rotate on their axes while orbiting the Sun at visually accurate relative speeds; distances must be scaled down proportionally to fit within an explorable scene while preserving spatial relationships; a toggle must allow users to switch between realistic scale and educational scale.
+
+Planet Selection and Focus System
+Users must be able to select a planet through either pointer aiming plus one-second dwell or pinch while looking at a planet; once selected, the camera must smoothly center on that planet; all other motion in the system must slow down in focus mode to reduce distraction; users must be able to exit focus mode with a simple open-hand wave.
+
+Dynamic Planetary Information Panel
+When a planet is selected, an information panel must appear displaying; planet name; diameter; distance from the Sun; orbital period; rotation period; number of moons; atmospheric composition; average surface temperature; and one visual diagram of orbit; the panel must update automatically when the user selects a new body.
+
+Visual Fidelity and Environment
+Use high-resolution planetary textures, realistic lighting from the Sun, dynamic shadows, volumetric solar glow, and a deep-space starfield background; include three visualization presets; Realistic Mode; Educational Mode with labeled orbits; Artistic Mode with stylized colors and glow.
+
+Customization Controls
+Provide a side control panel where users can adjust; background space color; star brightness; solar flare intensity; planetary atmosphere hue; toggle orbital lines; toggle labels; toggle scale markers.
+
+Performance Requirements
+The system must run at a stable 60 FPS on standard laptops with webcams; gesture latency must remain under 150 milliseconds; planet selection accuracy must work within two attempts; textures and particles must be optimized to avoid frame drops.
+
+Accessibility and Alternative Controls
+Every gesture action must have a mouse, keyboard, and touch equivalent; arrow keys for panning; scroll wheel for zoom; click-and-drag for rotation; this ensures usability without a camera.
+
+User Onboarding
+On first launch, present a 30-second guided tutorial that visually demonstrates pinch zoom, closed-palm pan, and open-palm rotation; users must be able to skip the tutorial.
+
+Privacy Guarantee
+All hand tracking must occur locally in the browser; no video or biometric data may be stored or transmitted; display a clear notice confirming local processing.
+
+Technical Stack Suggestion
+Use Three.js for rendering; Mediapipe Hands or WebXR Hand Tracking for gesture recognition; lightweight orbital simulation instead of full N-body physics; optimized texture loading with lazy loading for distant planets.
+
+Footer:
+©️(current year) All rights reserved | WDC Solutions powered by Tee-David™️

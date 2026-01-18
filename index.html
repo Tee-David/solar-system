@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ORBITAL | Gesture 3D</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div id="app">
+    <canvas id="three-canvas"></canvas>
+    <video id="input-video" playsinline style="display: none;"></video>
+
+    <div id="ui-layer">
+      <div id="loading-screen">
+        <div class="loader-orbit">
+          <div class="loader-sun"></div>
+        </div>
+        <p>Initializing Deep Space Interface</p>
+      </div>
+
+      <div id="hand-tracking-status" class="glass">
+        <div class="dot"></div>
+        <span>NEURAL TRACKING</span>
+      </div>
+
+      <div id="info-panel" class="glass hidden"></div>
+
+      <div id="gesture-indicator-container">
+        <div id="gesture-indicator" class="glass">CALIBRATING</div>
+      </div>
+
+      <div id="controls-help">
+        <div class="control-pill"><span>PINCH</span> ZOOM</div>
+        <div class="control-pill"><span>FIST</span> PAN</div>
+        <div class="control-pill"><span>PALM</span> ROTATE</div>
+        <div class="control-pill"><span>DWELL</span> SELECT</div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
+</html>
