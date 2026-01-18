@@ -22,35 +22,48 @@ export class Planet extends THREE.Group {
     public labelElement: HTMLElement;
     private atmosphere: THREE.Mesh;
     private rings?: THREE.Mesh;
+    private clouds?: THREE.Mesh;
 
     constructor(config: PlanetConfig) {
         super();
 
         const geometry = new THREE.SphereGeometry(config.radius, 64, 64);
+        const textureLoader = new THREE.TextureLoader();
 
         let material: THREE.MeshStandardMaterial;
-        const textureLoader = new THREE.TextureLoader();
 
         if (config.name === 'Earth') {
             const dayTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_day_4096.jpg');
             const specTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_specular_2048.jpg');
+            const bumpTexture = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_bump_2048.jpg');
 
             material = new THREE.MeshStandardMaterial({
                 map: dayTexture,
                 roughnessMap: specTexture,
+                bumpMap: bumpTexture,
+                bumpScale: 0.1,
                 roughness: 0.8,
                 metalness: 0.2,
-                emissive: new THREE.Color(0x001144),
-                emissiveIntensity: 0.2,
             });
+
+            // Cloud Layer
+            const cloudGeom = new THREE.SphereGeometry(config.radius * 1.01, 64, 64);
+            const cloudTex = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png');
+            const cloudMat = new THREE.MeshStandardMaterial({
+                map: cloudTex,
+                transparent: true,
+                opacity: 0.4,
+                depthWrite: false,
+            });
+            this.clouds = new THREE.Mesh(cloudGeom, cloudMat);
+            this.add(this.clouds);
+
         } else if (config.textureName) {
             const texture = textureLoader.load(`https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/${config.textureName}.jpg`);
             material = new THREE.MeshStandardMaterial({
                 map: texture,
                 roughness: 0.8,
                 metalness: 0.1,
-                emissive: new THREE.Color(config.color),
-                emissiveIntensity: 0.05,
             });
         } else {
             material = new THREE.MeshStandardMaterial({
@@ -62,6 +75,8 @@ export class Planet extends THREE.Group {
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.name = config.name;
+        this.mesh.castShadow = true;
+        this.mesh.receiveShadow = true;
         this.add(this.mesh);
 
         this.orbitSpeed = config.speed;
@@ -69,17 +84,15 @@ export class Planet extends THREE.Group {
         this.distance = config.distance;
         this.angle = Math.random() * Math.PI * 2;
 
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
-
-        // Atmospheric Glow
-        const atmoGeom = new THREE.SphereGeometry(config.radius * 1.08, 64, 64);
+        // Advanced Fresnel Atmosphere
+        const atmoGeom = new THREE.SphereGeometry(config.radius * 1.1, 64, 64);
         const atmoMat = new THREE.ShaderMaterial({
             transparent: true,
             side: THREE.BackSide,
             blending: THREE.AdditiveBlending,
             uniforms: {
                 glowColor: { value: new THREE.Color(config.color) },
+                powFactor: { value: 6.0 },
                 viewVector: { value: new THREE.Vector3() }
             },
             vertexShader: `
@@ -93,33 +106,48 @@ export class Planet extends THREE.Group {
       `,
             fragmentShader: `
         uniform vec3 glowColor;
+        uniform float powFactor;
         varying vec3 vNormal;
         varying vec3 vPosition;
         void main() {
           vec3 viewDir = normalize(-vPosition);
-          float intensity = pow(0.7 - dot(vNormal, viewDir), 5.0);
-          gl_FragColor = vec4(glowColor, intensity);
+          float intensity = pow(0.7 - dot(vNormal, viewDir), powFactor);
+          gl_FragColor = vec4(glowColor, intensity * 0.8);
         }
       `
         });
         this.atmosphere = new THREE.Mesh(atmoGeom, atmoMat);
         this.add(this.atmosphere);
 
-        // Saturn Rings
+        // Realistic Planetary Rings (Saturn Style)
         if (config.hasRings) {
-            const ringGeom = new THREE.TorusGeometry(config.radius * 2.2, config.radius * 0.4, 2, 128);
+            const innerRadius = config.radius * 1.4;
+            const outerRadius = config.radius * 2.2;
+            const ringGeom = new THREE.RingGeometry(innerRadius, outerRadius, 128);
+
+            // UV mapping for rings to look like stripes
+            const pos = ringGeom.attributes.position;
+            const v3 = new THREE.Vector3();
+            for (let i = 0; i < pos.count; i++) {
+                v3.fromBufferAttribute(pos, i);
+                ringGeom.attributes.uv.setXY(i, (v3.length() - innerRadius) / (outerRadius - innerRadius), 0);
+            }
+
             const ringMat = new THREE.MeshStandardMaterial({
                 color: config.color,
                 transparent: true,
-                opacity: 0.4,
-                side: THREE.DoubleSide
+                opacity: 0.6,
+                side: THREE.DoubleSide,
+                metalness: 0.1,
+                roughness: 0.8
             });
+
             this.rings = new THREE.Mesh(ringGeom, ringMat);
-            this.rings.rotation.x = Math.PI / 2.5;
+            this.rings.rotation.x = Math.PI / 2.1;
             this.add(this.rings);
         }
 
-        // Label
+        // HUD Label
         this.labelElement = document.createElement('div');
         this.labelElement.className = 'planet-label';
         this.labelElement.innerHTML = `<div class="line"></div><div class="name">${config.name}</div>`;
@@ -132,10 +160,11 @@ export class Planet extends THREE.Group {
         const scaledDelta = delta * this.timeScale;
         this.angle += this.orbitSpeed * scaledDelta;
         this.mesh.rotation.y += this.rotSpeed * scaledDelta;
-        if (this.rings) {
-            // Subtle ring oscillation
-            this.rings.rotation.z += scaledDelta * 0.1;
+
+        if (this.clouds) {
+            this.clouds.rotation.y += this.rotSpeed * 1.2 * scaledDelta;
         }
+
         this.updatePosition();
         this.updateLabel(camera);
     }
